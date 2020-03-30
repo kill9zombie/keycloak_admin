@@ -1,0 +1,10 @@
+{application,keycloak_admin,
+             [{applications,[kernel,stdlib,elixir,logger,tesla]},
+              {description,"keycloak_admin"},
+              {modules,['Elixir.KeycloakAdmin','Elixir.KeycloakAdmin.Client',
+                        'Elixir.KeycloakAdmin.Group',
+                        'Elixir.KeycloakAdmin.Groups',
+                        'Elixir.KeycloakAdmin.KeycloakCredentials',
+                        'Elixir.KeycloakAdmin.User']},
+              {registered,[]},
+              {vsn,"0.1.0"}]}.
