@@ -1,39 +1,40 @@
-defmodule KeycloakAdmin.Groups do
-  @spec from_maps([Map.t()]) :: {:ok[KeycloakAdmin.Group.t()]}
-  def from_maps(maps) do
-    groups =
-      Enum.reduce(maps, [], fn group_map ->
-        KeycloakAdmin.Group.from_map(group_map)
-      end)
-
-    if Enum.any?(groups, fn {:error, _} -> true end) do
-      reasons = for {:error, reason} <- groups, do: reason
-      {:error, reasons}
-    else
-      {:ok, groups}
-    end
-  end
-end
-
 defmodule KeycloakAdmin.Group do
-  defstruct [:id, :name, :path]
+  @moduledoc ~S"""
+  Group operations.
 
-  def from_map(map) do
-    struct_keys = Map.keys(%__MODULE__{})
+  """
 
-    if Enum.all?(struct_keys, fn key -> key in Map.keys(map) end) do
-      # yay!
-      struct =
-        Enum.reduce(struct_keys, %__MODULE__{}, fn key, acc ->
-          Map.update(acc, key, Map.get(map, key))
-        end)
+  alias KeycloakAdmin.HTTP
 
-      {:ok, struct}
-    else
-      {:error,
-       "Could not build a #{__MODULE__}, expected keys: #{inspect(struct_keys)} but only got: #{
-         inspect(Map.keys(map))
-       }"}
+  def details(client = %{error: err}) when err != nil, do: client
+  def details(client) do
+    query = URI.encode_query(%{"full" => true})
+    do_details(client, query)
+  end
+
+  def details(client, search) do
+    query = URI.encode_query(%{"full" => true, "search" => search})
+    do_details(client, query)
+  end
+
+  defp do_details(client, query) do
+    case HTTP.get(client, "/groups?#{query}") do
+      {:ok, connref, decoded} -> %{client | connref: connref, groups: decoded}
+      {:error, reason} -> %{client | error: reason}
     end
   end
+
+  def get_id(client = %{error: err}, _group_name) when err != nil, do: client
+  def get_id(%KeycloakAdmin.Client{groups: []} = client, group_name) do
+    client
+    |> details()
+    |> get_id(group_name)
+  end
+  def get_id(%KeycloakAdmin.Client{groups: groups}, group_name) do
+    groups
+    |> Stream.filter(fn(x) -> x["name"] == group_name end)
+    |> Stream.map(fn(x) -> x["id"] end)
+    |> Enum.at(0)
+  end
+
 end
