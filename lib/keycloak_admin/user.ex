@@ -68,6 +68,7 @@ defmodule KeycloakAdmin.User do
         user = merge_user_details(user, user_details)
         %{client | connref: connref, user: user}
     else
+      {:ok, connref, []} -> %{client | error: {:details, :no_such_user}}
       {:error, reason} -> %{client | error: reason}
     end
   end
